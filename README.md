@@ -62,7 +62,7 @@ xattr -dr com.apple.quarantine /Applications/ConversorMD.app
 Requisitos: Python 3.10 o superior.
 
 ```bash
-git clone https://github.com/TU_USUARIO/conversor-md.git
+git clone https://github.com/Turidevelop/conversor-md.git
 cd conversor-md
 ```
 
