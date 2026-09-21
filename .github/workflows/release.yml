@@ -1,0 +1,74 @@
+name: Build y release
+
+# Se ejecuta al subir un tag tipo v1.0.0, o a mano desde la pestaña Actions
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.nombre }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            nombre: Windows
+          - os: macos-latest   # Apple Silicon (arm64)
+            nombre: macOS
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      - name: Compilar (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --onefile --windowed --noconfirm --name ConversorMD conversor_md.py
+          mkdir release
+          mv dist/ConversorMD.exe release/ConversorMD-Windows.exe
+
+      - name: Compilar (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller --windowed --noconfirm --name ConversorMD \
+            --osx-bundle-identifier es.turidev.conversormd conversor_md.py
+          mkdir release
+          # ditto conserva los enlaces simbólicos del .app (zip normal lo rompe)
+          ditto -c -k --keepParent dist/ConversorMD.app release/ConversorMD-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ConversorMD-${{ matrix.nombre }}
+          path: release/*
+
+  release:
+    name: Publicar release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
