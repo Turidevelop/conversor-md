@@ -39,14 +39,18 @@ jobs:
       - name: Compilar (Windows)
         if: runner.os == 'Windows'
         run: |
-          pyinstaller --onefile --windowed --noconfirm --name ConversorMD conversor_md.py
+          pyinstaller --onefile --windowed --noconfirm --name ConversorMD \
+            --icon docs/turidevicon.ico conversor_md.py
           mkdir release
           mv dist/ConversorMD.exe release/ConversorMD-Windows.exe
 
       - name: Compilar (macOS)
         if: runner.os == 'macOS'
         run: |
+          # PyInstaller necesita Pillow para convertir el .png a .icns
+          pip install pillow
           pyinstaller --windowed --noconfirm --name ConversorMD \
+            --icon docs/turidevicon.png \
             --osx-bundle-identifier es.turidev.conversormd conversor_md.py
           mkdir release
           # ditto conserva los enlaces simbólicos del .app (zip normal lo rompe)
